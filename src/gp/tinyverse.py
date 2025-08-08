@@ -404,6 +404,10 @@ class GPModel(ABC):
         terminate = False
         silent = self.config.silent_algorithm
 
+        max_episode_steps = problem.agent.env.get_wrapper_attr('_max_episode_steps')
+        _max_episode_steps = 1000 + (self.generation_number) * (max_episode_steps - 1000) // self.config.max_generations
+        problem.agent.env.set_wrapper_attr('_max_episode_steps', _max_episode_steps)
+
         for job in range(self.config.num_jobs):
             self.num_evaluations = 0
 
@@ -412,6 +416,9 @@ class GPModel(ABC):
             best_fitness = best_fitness_job = best_individual.fitness
 
             while self.generation_number < self.config.max_generations:
+
+                _max_episode_steps = 1000 + (self.generation_number + 1) * (max_episode_steps - 1000) // self.config.max_generations
+                problem.agent.env.set_wrapper_attr('_max_episode_steps', _max_episode_steps)
 
                 best_gen = self.pipeline(problem)
                 best_gen_fitness = best_gen.fitness
@@ -514,7 +521,7 @@ class GPModel(ABC):
 
         if not self.config.silent_evolver:
             print(f"Resuming from generation {self.generation_number}")
-        self.evolve(problem)
+        return self.evolve(problem)
 
     def report_job(
         self,
