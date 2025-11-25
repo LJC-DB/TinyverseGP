@@ -5,6 +5,7 @@ Benchmark representation module for policy search.
 
 """
 
+import random
 import gymnasium as gym
 
 from src.benchmark.benchmark import Benchmark
@@ -28,7 +29,7 @@ class GPAgent:
         if flatten_obs:
             self.wrapped_env = FlattenObservation(self.env)
 
-    def evaluate_policy(self, policy, model, num_episodes=100, wait_key=False):
+    def evaluate_policy(self, policy, model, num_episodes=100, wait_key=False, prob=0):
         """
         Evaluates a policy in an environment with the selected number of episodes.
 
@@ -49,7 +50,7 @@ class GPAgent:
                     obs_ = self.wrapped_env.observation(obs)
                 else:
                     obs_ = obs
-                action = self.get_action(policy, model, obs_)
+                action = self.get_action(policy, model, obs_, prob)
                 next_obs, reward, terminated, truncated, info = self.env.step(action)
                 done = terminated or truncated
                 obs = next_obs
@@ -59,7 +60,7 @@ class GPAgent:
             rewards.append(cumulative_reward)
         return statistics.mean(rewards)
 
-    def get_action(self, policy: list[int], model: GPModel, obs):
+    def get_action(self, policy: list[int], model: GPModel, obs, prob=0):
         """
         Predicts the action of an agent equipped with a candidate policy based
         on the given observation.
@@ -69,6 +70,9 @@ class GPAgent:
         :param obs: observation
         :return: predicted agent that is being performed by the agent
         """
-        prediction = model.predict(policy, obs)
+        if random.random() < prob:
+            return self.env.action_space.sample()        
+        else:
+            prediction = model.predict(policy, obs)
         maximum = max(prediction)
         return prediction.index(maximum)

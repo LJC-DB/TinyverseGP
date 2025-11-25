@@ -135,19 +135,20 @@ class PolicySearch(Problem):
     num_episodes: int
 
     def __init__(
-        self, env: gym.Env, ideal_: float, minimizing_: bool, num_episodes_: int = 100
+        self, env: gym.Env, ideal_: float, minimizing_: bool, num_episodes_: int = 100, prob_ = 0
     ):
         self.agent = GPAgent(env)
         self.ideal = ideal_
         self.minimizing = minimizing_
         self.num_episodes = num_episodes_
+        self.prob = prob_
 
     def evaluate(
         self, genome, model: GPModel, num_episodes: int = None, wait_key: bool = False
     ) -> float:
         if num_episodes is None:
             num_episodes = self.num_episodes
-        return self.agent.evaluate_policy(genome, model, num_episodes, wait_key)
+        return self.agent.evaluate_policy(genome, model, num_episodes, wait_key, self.prob)
 
 
 class ProgramSynthesis(Problem):

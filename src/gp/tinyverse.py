@@ -314,10 +314,10 @@ class GPModel(ABC):
         for individual in self.population:
             self.num_evaluations += 1
             genome = individual.genome
-            if individual.fitness is None:
-                individual.fitness = self.penalize(
-                    self.evaluate_individual(genome, problem), genome
-                )
+            # if individual.fitness is None:
+            individual.fitness = self.penalize(
+                self.evaluate_individual(genome, problem), genome
+            )
             fitness = individual.fitness
 
             if best is None:
@@ -405,6 +405,11 @@ class GPModel(ABC):
         terminate = False
         silent = self.config.silent_algorithm
 
+        max_episode_steps = problem.agent.env.get_wrapper_attr('_max_episode_steps')
+        min_episode_steps = min(1000, max_episode_steps)
+        _max_episode_steps = min_episode_steps + (self.generation_number) * (max_episode_steps - min_episode_steps) // self.config.max_generations
+        problem.agent.env.set_wrapper_attr('_max_episode_steps', _max_episode_steps)
+
         for job in range(self.config.num_jobs):
             self.num_evaluations = 0
 
@@ -414,15 +419,18 @@ class GPModel(ABC):
 
             while self.generation_number < self.config.max_generations:
 
+                _max_episode_steps = min_episode_steps + (self.generation_number + 1) * (max_episode_steps - min_episode_steps) // self.config.max_generations
+                problem.agent.env.set_wrapper_attr('_max_episode_steps', _max_episode_steps)
+
                 best_gen = self.pipeline(problem)
                 best_gen_fitness = best_gen.fitness
 
-                if problem.is_better(best_gen_fitness, best_fitness):
-                    best_individual = best_gen
-                    best_fitness = best_gen_fitness
+                # if problem.is_better(best_gen_fitness, best_fitness):
+                best_individual = best_gen
+                best_fitness = best_gen_fitness
 
-                if problem.is_better(best_gen_fitness, best_fitness_job):
-                    best_fitness_job = best_gen_fitness
+                # if problem.is_better(best_gen_fitness, best_fitness_job):
+                best_fitness_job = best_gen_fitness
 
                 self.report_generation(
                     silent_algorithm=self.config.silent_algorithm,
@@ -515,7 +523,7 @@ class GPModel(ABC):
 
         if not self.config.silent_evolver:
             print(f"Resuming from generation {self.generation_number}")
-        self.evolve(problem)
+        return self.evolve(problem)
 
     def report_job(
         self,
